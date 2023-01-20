@@ -97,6 +97,8 @@ type expr =
   | ELet of ident * expr * expr
   (* définition récursive locale *)
   | ELetrec of ident * expr * expr
+  (* Defintion de constructeur de type pour la relge (Expr) *)
+  | EExprPar of expr
 
 (* exception en cas d'erreur     *)
 (* de lecture des lexèmes        *)

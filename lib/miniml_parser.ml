@@ -217,7 +217,39 @@ let rec parse_Expr = fun flux ->
       parse_constant 
       >>= fun c -> return (EConstant(c))
     )
-    
+    ++ 
+    (* (Expr Binop Expr) *)
+    (
+      p_par_ouv *> parse_Expr *> parse_binop *> parse_Expr *> p_par_fer 
+      >>= fun ((((_, e1), binop), e2), _) -> return ( EApply( EApply(binop, e1), e2)) 
+    )
+    ++
+    (* (Expr :: Expr) *)
+    (
+      p_par_ouv *> parse_Expr *> p_cons *> parse_Expr *> p_par_fer 
+      >>= fun ((((_, e1), _), e2), _) -> return ( ECons(e1, e2)) 
+    )
+    ++
+    (* (Expr Expr) *)
+    (
+      p_par_ouv *> parse_Expr *> parse_Expr *> p_par_fer 
+      >>= fun (((_, fun_id), fun_args), _) -> return (EApply (fun_id, fun_args))
+    )
+    ++
+    (* if Expr then Expr else Expr *)
+    (
+      p_if *> parse_Expr *> p_then *> parse_Expr *> p_else *> parse_Expr
+      >>= fun (((((_, condition_expr), _), then_expr), _), else_expr) -> return (EIf(condition_expr, then_expr, else_expr))
+    )
+    ++
+    (* (fun ident −> Expr) *)
+    (
+      p_par_ouv *> p_fun *> p_ident *> p_to *> parse_Expr *> p_par_fer
+      >>= fun (((((_, _), id), _), fun_body), _) -> return (EFun (id, fun_body))
+    )
+    ++
+    (* ident *)
+    (p_ident >>= fun id -> return (EIdent(id)))
   ) flux
 and parse_constant = fun token_flux -> 
   (
@@ -237,8 +269,49 @@ and parse_constant = fun token_flux ->
       p_par_ouv *> p_par_fer >>= fun (_, _) -> return (CUnit)
     )
   ) token_flux
-
-
+and parse_binop = fun token_flux -> 
+  (
+    (parse_arithop)
+    ++
+    (parse_boolop)
+    ++
+    (parse_relop)
+    ++
+    (p_concat >>= fun _ -> return (EBinop(CONCAT)))
+  ) token_flux
+and parse_arithop = fun token_flux -> (
+  (p_plus >>= fun _ -> return (EBinop(PLUS)))
+  ++
+  (p_moins >>= fun _ -> return (EBinop(MOINS)))
+  ++
+  (p_mult >>= fun _ -> return (EBinop(MULT)))
+  ++
+  (p_div >>= fun _ -> return (EBinop(DIV)))
+) token_flux
+and parse_boolop = fun token_flux -> (
+  (p_and >>= fun _ -> return (EBinop(AND)))
+  ++
+  (p_or >>= fun _ -> return (EBinop(OR))) 
+) token_flux
+and parse_relop = fun token_flux -> (
+  (p_eq >>= fun _ -> return (EBinop(EQU)))
+  ++
+  (p_not_eq >>= fun _ -> return (EBinop(NOTEQ)))
+  ++ 
+  (p_inf_or_eq >>= fun _ -> return (EBinop(INFEQ)))
+  ++
+  (p_inf >>= fun _ -> return (EBinop(INF)))
+  ++
+  (p_sup_or_eq >>= fun _ -> return (EBinop(SUPEQ)))
+  ++
+  (p_sup >>= fun _ -> return (EBinop(SUP)))
+  ++
+  (* (Expr) *) 
+  (
+    p_par_ouv *> parse_Expr *> p_par_fer
+    >>= fun ( (_, e), _) -> return (EExprPar(e))
+  )
+) token_flux
 let parse_miniml token_flux = run (map fst (parse_Expr *> p_eof)) token_flux;;
   
 let rec print_solutions expr =
