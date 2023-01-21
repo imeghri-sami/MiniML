@@ -60,6 +60,8 @@ let rec print_expr fmt expr =
   | EApply (f, a)         -> Format.fprintf fmt "(%a %a)" print_expr f print_expr a
   | ELet (id, e1, e2)     -> Format.fprintf fmt "let %s = %a in %a" id print_expr e1 print_expr e2
   | ELetrec (id, e1, e2)  -> Format.fprintf fmt "let rec %s = %a in %a" id print_expr e1 print_expr e2
+  (* Rq : Add EExprPar for exhaustive parttern matching *)
+  | EExprPar (e)          -> Format.fprintf fmt "(%a)" print_expr e
 
 (* affichage d'un type              *)
 (* paramétré par l'affichage des    *)
