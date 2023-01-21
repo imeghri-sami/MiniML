@@ -250,6 +250,12 @@ let rec parse_Expr = fun flux ->
     ++
     (* ident *)
     (p_ident >>= fun id -> return (EIdent(id)))
+    ++
+    (* (Expr) *) 
+    (
+      p_par_ouv *> parse_Expr *> p_par_fer
+      >>= fun ( (_, e), _) -> return (EExprPar(e))
+    )
   ) flux
 and parse_constant = fun token_flux -> 
   (
@@ -305,12 +311,6 @@ and parse_relop = fun token_flux -> (
   (p_sup_or_eq >>= fun _ -> return (EBinop(SUPEQ)))
   ++
   (p_sup >>= fun _ -> return (EBinop(SUP)))
-  ++
-  (* (Expr) *) 
-  (
-    p_par_ouv *> parse_Expr *> p_par_fer
-    >>= fun ( (_, e), _) -> return (EExprPar(e))
-  )
 ) token_flux
 let parse_miniml token_flux = run (map fst (parse_Expr *> p_eof)) token_flux;;
   
